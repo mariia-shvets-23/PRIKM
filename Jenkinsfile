@@ -34,7 +34,7 @@ pipeline {
                         docker ps -a --filter ancestor=mariiashvets/prikm --format "{{.ID}}" | xargs -r docker rm
                     '''
                     // запустити новий контейнер
-                    sh 'docker run -d -p 80:80 mariiashvets/prikm'
+                    sh 'docker run -d -p 8081:80 mariiashvets/prikm'
                 }
             }
         }
