@@ -20,9 +20,10 @@ pipeline {
     agent any
 
     parameters {
-        choice(name: 'ENV', choices: ['dev', 'test', 'prod'], description: 'Оберіть середовище')
-        string(name: 'MESSAGE', defaultValue: 'Привіт з Jenkins!', description: 'Повідомлення для Teams')
+        choice(name: 'ENV', choices: ['dev', 'test', 'prod'], description: 'Choose environment')
+        string(name: 'MESSAGE', defaultValue: 'Hello from Jenkins!', description: 'Message to send to Teams')
     }
+
 
     triggers {
         cron('H/5 * * * *')
