@@ -20,7 +20,7 @@ pipeline {
     agent any
 
     triggers {
-        cron('H/5 * * * *') // кожні 5 хвилин
+        cron('H/5 * * * *')
     }
 
     stages {
