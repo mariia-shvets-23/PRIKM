@@ -1,41 +1,32 @@
+properties([
+    office365ConnectorWebhooks([
+        [
+            name: 'Teams-O365',
+            url: 'https://lpnu.webhook.office.com/webhookb2/cdb8219e-a982-4020-96bc-0cb927b5c250@7631cd62-5187-4e15-8b8e-ef653e366e7a/JenkinsCI/d362810701ac415cabf8dbc577233ed7/294e4ebb-5ec1-414e-8bf6-c622514c87e0/V20PBAjwS-hjJPEVvl0shJOKSkDEdKM1EEADmXJeEjMVg1',
+            startNotification: false,
+            notifySuccess: true,
+            notifyAborted: false,
+            notifyNotBuilt: false,
+            notifyUnstable: true,
+            notifyFailure: true,
+            notifyBackToNormal: true,
+            notifyRepeatedFailure: false,
+            timeout: 30000
+        ]
+    ])
+])
+
 pipeline {
     agent any
 
+    triggers {
+        cron('H/5 * * * *') // кожні 5 хвилин
+    }
+
     stages {
-        stage('Start') {
+        stage('Test Notification') {
             steps {
-                echo 'Lab_2: started by GitHub'
-            }
-        }
-
-        stage('Build image') {
-            steps {
-                sh 'docker build -t prikm:latest .'
-                sh 'docker tag prikm mariiashvets/prikm:latest'
-                sh 'docker tag prikm mariiashvets/prikm:${BUILD_NUMBER}'
-            }
-        }
-
-        stage('Push to DockerHub') {
-            steps {
-                withDockerRegistry([ credentialsId: 'dockerhub-creds', url: '' ]) {
-                    sh 'docker push mariiashvets/prikm:latest'
-                    sh 'docker push mariiashvets/prikm:${BUILD_NUMBER}'
-                }
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                script {
-                    // зупинити і видалити всі контейнери, створені з образом prikm
-                    sh '''
-                        docker ps -a --filter ancestor=mariiashvets/prikm --format "{{.ID}}" | xargs -r docker stop
-                        docker ps -a --filter ancestor=mariiashvets/prikm --format "{{.ID}}" | xargs -r docker rm
-                    '''
-                    // запустити новий контейнер
-                    sh 'docker run -d -p 8081:80 mariiashvets/prikm'
-                }
+                echo '🔧 Тестуємо інтеграцію з Teams...'
             }
         }
     }
