@@ -19,6 +19,11 @@ properties([
 pipeline {
     agent any
 
+    parameters {
+        choice(name: 'ENV', choices: ['dev', 'test', 'prod'], description: 'Оберіть середовище')
+        string(name: 'MESSAGE', defaultValue: 'Привіт з Jenkins!', description: 'Повідомлення для Teams')
+    }
+
     triggers {
         cron('H/5 * * * *')
     }
@@ -27,6 +32,14 @@ pipeline {
         stage('Test Notification') {
             steps {
                 echo '🔧 Тестуємо інтеграцію з Teams...'
+            }
+        }
+
+        stage('Notify Details') {
+            steps {
+                echo "Обране середовище: ${params.ENV}"
+                echo "Повідомлення для Teams: ${params.MESSAGE}"
+                sh "echo 'Повідомлення: ${params.MESSAGE} | Середовище: ${params.ENV}' >> log.txt"
             }
         }
     }
