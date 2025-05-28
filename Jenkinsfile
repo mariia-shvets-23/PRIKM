@@ -19,9 +19,16 @@ pipeline {
         stage('Deploy nginx/custom') {
             steps {
                 script {
-                    // Спроба зупинити попередній контейнер
-                    sh 'docker ps -q --filter "ancestor=nginx/custom:latest" | xargs -r docker stop'
-                    // Запуск нового контейнера
+                    // Знайти контейнер, що слухає порт 80, і зупинити+видалити його
+                    sh '''
+                        container_id=$(docker ps -q --filter "publish=80")
+                        if [ -n "$container_id" ]; then
+                            echo "Stopping container using port 80: $container_id"
+                            docker stop $container_id
+                            docker rm $container_id
+                        fi
+                    '''
+                    // Запустити новий контейнер
                     sh 'docker run -d -p 80:80 nginx/custom:latest'
                 }
             }
