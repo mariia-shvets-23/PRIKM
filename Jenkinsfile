@@ -18,7 +18,12 @@ pipeline {
         }
         stage('Deploy nginx/custom') {
             steps {
-                sh 'docker run -d -p 80:80 nginx/custom:latest'
+                script {
+                    // Спроба зупинити попередній контейнер
+                    sh 'docker ps -q --filter "ancestor=nginx/custom:latest" | xargs -r docker stop'
+                    // Запуск нового контейнера
+                    sh 'docker run -d -p 80:80 nginx/custom:latest'
+                }
             }
         }
     }
