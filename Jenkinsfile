@@ -31,10 +31,15 @@ pipeline {
 
         stage('Test') {
             steps {
-                echo "Testing for ${env.TARGET_ENV}"
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r tests/requirements.txt
+                    pytest tests
+                '''
             }
         }
-
         stage('Deploy') {
             steps {
                 script {
