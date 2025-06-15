@@ -28,7 +28,6 @@ pipeline {
                 sh "docker build -t ${env.IMAGE_NAME}:latest ."
             }
         }
-
         stage('Test') {
             steps {
                 sh '''
