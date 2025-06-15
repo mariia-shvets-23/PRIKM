@@ -1,38 +1,48 @@
 pipeline {
     agent any
+
+    environment {
+        REGISTRY     = 'mariia/nginx-custom'
+        TAG          = "${env.BUILD_NUMBER}"
+        TARGET_ENV   = (env.GIT_BRANCH ==~ /origin\\/main|origin\\/master/ ? 'production' : 'development')
+    }
+
     stages {
-        stage('Start') {
+        stage('Checkout') { steps { checkout scm } }
+
+        stage('Install & Test') {
             steps {
-                echo 'Lab_1: nginx/custom'
-                echo 'Webhook trigger test 1'
+                sh 'pip install -r requirements.txt --quiet'
+                sh 'pytest -q'
             }
         }
-        stage('Build nginx/custom') {
+
+        stage('Build image') {
             steps {
-                sh 'docker build -t nginx/custom:latest .'
+                sh """
+                   docker build -t ${REGISTRY}:${TAG} .
+                   docker tag ${REGISTRY}:${TAG} ${REGISTRY}:${TARGET_ENV}
+                """
             }
         }
-        stage('Test nginx/custom') {
-            steps {
-                echo 'Pass'
-            }
-        }
-        stage('Deploy nginx/custom') {
+
+        stage('Deploy') {
             steps {
                 script {
-                    // Знайти контейнер, що слухає порт 80, і зупинити+видалити його
-                    sh '''
-                        container_id=$(docker ps -q --filter "publish=80")
-                        if [ -n "$container_id" ]; then
-                            echo "Stopping container using port 80: $container_id"
-                            docker stop $container_id
-                            docker rm $container_id
-                        fi
-                    '''
-                    // Запустити новий контейнер
-                    sh 'docker run -d -p 80:80 nginx/custom:latest'
+                    def port = TARGET_ENV == 'production' ? '80' : '8081'
+                    def name = TARGET_ENV == 'production' ? 'prod_app' : 'dev_app'
+                    sh """
+                        cid=\$(docker ps -q --filter "name=${name}") || true
+                        [ -n "\$cid" ] && docker rm -f \$cid
+                        docker run -d --name ${name} -p ${port}:80 ${REGISTRY}:${TARGET_ENV}
+                    """
                 }
             }
         }
+    }
+
+    post {
+        success { echo "Deploy ${TARGET_ENV} complete" }
+        failure { echo "Pipeline failed" }
     }
 }
