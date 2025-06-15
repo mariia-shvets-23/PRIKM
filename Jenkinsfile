@@ -7,7 +7,11 @@ pipeline {
         stage('Set Target Environment') {
             steps {
                 script {
-                    env.TARGET_ENV = (env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'origin/master') ? 'production' : 'development'
+                    if (env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'origin/master') {
+                        env.TARGET_ENV = 'production'
+                    } else {
+                        env.TARGET_ENV = 'development'
+                    }
                     echo "Target environment: ${env.TARGET_ENV}"
                 }
             }
@@ -28,22 +32,32 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
+                    # створюємо і активуємо venv
                     python3 -m venv venv
                     . venv/bin/activate
+
+                    # оновлюємо pip та встановлюємо pytest
                     pip install --upgrade pip
                     pip install -r tests/requirements.txt
+
+                    # запускаємо тести
                     pytest -q tests
                 '''
             }
         }
+
         stage('Deploy') {
             steps {
                 script {
-                    // прибрати старий prod-контейнер (якщо був на 80)
+                    // зупиняємо старий контейнер на 80
                     sh '''
-                        cid=$(docker ps -q --filter "publish=80")
-                        [ -n "$cid" ] && docker rm -f $cid
+                        container_id=$(docker ps -q --filter "publish=80")
+                        if [ -n "$container_id" ]; then
+                            docker stop $container_id
+                            docker rm   $container_id
+                        fi
                     '''
+                    // запускаємо новий контейнер на відповідному порту
                     if (env.TARGET_ENV == 'production') {
                         sh "docker run -d -p 80:80 ${env.IMAGE_NAME}:latest"
                     } else {
@@ -52,3 +66,5 @@ pipeline {
                 }
             }
         }
+    }
+}
