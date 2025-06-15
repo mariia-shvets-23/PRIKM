@@ -1,48 +1,60 @@
 pipeline {
     agent any
-
     environment {
-        REGISTRY     = 'mariia/nginx-custom'
-        TAG          = "${env.BUILD_NUMBER}"
-        TARGET_ENV   = (env.GIT_BRANCH ==~ /origin\\/main|origin\\/master/ ? 'production' : 'development')
+        IMAGE_NAME = 'nginx/custom'
     }
-
     stages {
-        stage('Checkout') { steps { checkout scm } }
-
-        stage('Install & Test') {
+        stage('Set Target Environment') {
             steps {
-                sh 'pip install -r requirements.txt --quiet'
-                sh 'pytest -q'
+                script {
+                    if (env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'origin/master') {
+                        env.TARGET_ENV = 'production'
+                    } else {
+                        env.TARGET_ENV = 'development'
+                    }
+                    echo "Target environment: ${env.TARGET_ENV}"
+                }
             }
         }
 
-        stage('Build image') {
+        stage('Start') {
             steps {
-                sh """
-                   docker build -t ${REGISTRY}:${TAG} .
-                   docker tag ${REGISTRY}:${TAG} ${REGISTRY}:${TARGET_ENV}
-                """
+                echo "Lab_1: ${env.IMAGE_NAME}"
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh "docker build -t ${env.IMAGE_NAME}:latest ."
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo "Testing for ${env.TARGET_ENV}"
             }
         }
 
         stage('Deploy') {
             steps {
                 script {
-                    def port = TARGET_ENV == 'production' ? '80' : '8081'
-                    def name = TARGET_ENV == 'production' ? 'prod_app' : 'dev_app'
-                    sh """
-                        cid=\$(docker ps -q --filter "name=${name}") || true
-                        [ -n "\$cid" ] && docker rm -f \$cid
-                        docker run -d --name ${name} -p ${port}:80 ${REGISTRY}:${TARGET_ENV}
-                    """
+                    // Зупинити старий контейнер на 80 порту
+                    sh '''
+                        container_id=$(docker ps -q --filter "publish=80")
+                        if [ -n "$container_id" ]; then
+                            echo "Stopping container using port 80: $container_id"
+                            docker stop $container_id
+                            docker rm $container_id
+                        fi
+                    '''
+                    // Запустити новий контейнер
+                    if (env.TARGET_ENV == 'production') {
+                        sh "docker run -d -p 80:80 ${env.IMAGE_NAME}:latest"
+                    } else {
+                        sh "docker run -d -p 8080:80 ${env.IMAGE_NAME}:latest"
+                    }
                 }
             }
         }
-    }
-
-    post {
-        success { echo "Deploy ${TARGET_ENV} complete" }
-        failure { echo "Pipeline failed" }
     }
 }
