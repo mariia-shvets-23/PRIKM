@@ -31,11 +31,14 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r tests/requirements.txt
-                    pytest tests
+                    # встановлюємо pip, якщо його ще нема
+                    if ! command -v pip3 >/dev/null; then
+                      apt-get update -y && apt-get install -y python3-pip
+                    fi
+        
+                    pip3 install --upgrade pip
+                    pip3 install -r tests/requirements.txt     # >>> pytest
+                    pytest -q tests
                 '''
             }
         }
