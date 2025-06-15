@@ -4,7 +4,7 @@ pipeline {
         stage('Start') {
             steps {
                 echo 'Lab_1: nginx/custom'
-                echo 'Webhook trigger test'
+                echo 'Webhook trigger test 1'
             }
         }
         stage('Build nginx/custom') {
