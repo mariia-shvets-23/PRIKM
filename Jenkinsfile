@@ -31,14 +31,15 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                    # встановлюємо pip, якщо його ще нема
-                    if ! command -v pip3 >/dev/null; then
-                      apt-get update -y && apt-get install -y python3-pip
-                    fi
+                    # Встановити Python 3 і pip (якщо ще не встановлено)
+                    apt-get update && apt-get install -y python3 python3-pip
         
+                    # Встановити залежності для тестів
                     pip3 install --upgrade pip
-                    pip3 install -r tests/requirements.txt     # >>> pytest
-                    pytest -q tests
+                    pip3 install -r tests/requirements.txt
+        
+                    # Запуск тестів
+                    python3 -m pytest -q tests
                 '''
             }
         }
