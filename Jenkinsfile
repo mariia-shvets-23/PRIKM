@@ -2,6 +2,7 @@ pipeline {
     agent any
     environment {
         IMAGE_NAME = 'nginx/custom'
+        // NOOP_DUMMY: нічого не робить, тільки для коміту
     }
     stages {
         stage('Set Target Environment') {
