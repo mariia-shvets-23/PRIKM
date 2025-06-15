@@ -45,22 +45,26 @@ pipeline {
                 '''
             }
         }
-
+        
         stage('Deploy') {
             steps {
                 script {
-                    // зупиняємо старий контейнер на 80
+                    // 1) Прибираємо старий PROD (порт 80), якщо є
                     sh '''
-                        container_id=$(docker ps -q --filter "publish=80")
-                        if [ -n "$container_id" ]; then
-                            docker stop $container_id
-                            docker rm   $container_id
-                        fi
+                        cid80=$(docker ps -q --filter "publish=80")
+                        [ -n "$cid80" ] && docker rm -f $cid80
                     '''
-                    // запускаємо новий контейнер на відповідному порту
+        
                     if (env.TARGET_ENV == 'production') {
+                        // 2a) Запускаємо prod на 80
                         sh "docker run -d -p 80:80 ${env.IMAGE_NAME}:latest"
                     } else {
+                        // 2b) Спочатку зупиняємо старий DEV (порт 8081), якщо є
+                        sh '''
+                            cid8081=$(docker ps -q --filter "publish=8081")
+                            [ -n "$cid8081" ] && docker rm -f $cid8081
+                        '''
+                        // 3) Запускаємо DEV на 8081
                         sh "docker run -d -p 8081:80 ${env.IMAGE_NAME}:latest"
                     }
                 }
