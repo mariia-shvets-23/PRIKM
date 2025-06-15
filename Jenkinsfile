@@ -1,8 +1,5 @@
 pipeline {
     agent any
-    environment {
-    BUILD_TRIGGER = "manual-${new Date().getTime()}"
-}
     stages {
         stage('Start') {
             steps {
