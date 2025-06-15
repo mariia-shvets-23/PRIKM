@@ -7,7 +7,11 @@ pipeline {
         stage('Set Target Environment') {
             steps {
                 script {
-                    env.TARGET_ENV = (env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'origin/master') ? 'production' : 'development'
+                    if (env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'origin/master') {
+                        env.TARGET_ENV = 'production'
+                    } else {
+                        env.TARGET_ENV = 'development'
+                    }
                     echo "Target environment: ${env.TARGET_ENV}"
                 }
             }
@@ -15,7 +19,7 @@ pipeline {
 
         stage('Start') {
             steps {
-                echo "Lab1: ${env.IMAGE_NAME}"
+                echo "Lab_1: ${env.IMAGE_NAME}"
             }
         }
 
@@ -28,11 +32,15 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
+                    apt-get update && apt-get install -y python3 python3-pip python3-venv
+
                     python3 -m venv venv
                     . venv/bin/activate
+
                     pip install --upgrade pip
                     pip install -r tests/requirements.txt
-                    pytest -q tests
+
+                    python -m pytest -q tests
                 '''
             }
         }
@@ -48,4 +56,13 @@ pipeline {
                             docker rm $container_id
                         fi
                     '''
-                    def port = (env.TA
+                    if (env.TARGET_ENV == 'production') {
+                        sh "docker run -d -p 80:80 ${env.IMAGE_NAME}:latest"
+                    } else {
+                        sh "docker run -d -p 8080:80 ${env.IMAGE_NAME}:latest"
+                    }
+                }
+            }
+        }
+    }
+}
