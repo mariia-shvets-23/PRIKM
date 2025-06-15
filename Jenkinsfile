@@ -36,16 +36,19 @@ pipeline {
                 '''
             }
         }
-
         stage('Deploy') {
             steps {
                 script {
+                    // прибрати старий prod-контейнер (якщо був на 80)
                     sh '''
-                        container_id=$(docker ps -q --filter "publish=80")
-                        if [ -n "$container_id" ]; then
-                            echo "Stopping container using port 80: $container_id"
-                            docker stop $container_id
-                            docker rm $container_id
-                        fi
+                        cid=$(docker ps -q --filter "publish=80")
+                        [ -n "$cid" ] && docker rm -f $cid
                     '''
-                    def port = (env.TA
+                    if (env.TARGET_ENV == 'production') {
+                        sh "docker run -d -p 80:80 ${env.IMAGE_NAME}:latest"
+                    } else {
+                        sh "docker run -d -p 8081:80 ${env.IMAGE_NAME}:latest"
+                    }
+                }
+            }
+        }
