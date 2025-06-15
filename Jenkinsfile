@@ -19,7 +19,7 @@ pipeline {
 
         stage('Start') {
             steps {
-                echo "Lab-1: ${env.IMAGE_NAME}"
+                echo "Lab_1: ${env.IMAGE_NAME}"
             }
         }
 
